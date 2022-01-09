@@ -91,9 +91,18 @@ impl Todo {
     }
 
     fn print_all(self) {
+        let mut completed_todos: String = String::new();
+        let mut not_completed_todos: String = String::new();
+
         for (key, value) in self.map {
-            println!("{} - {}", key, value);
+            if value {
+                completed_todos = completed_todos + &key + ", ";
+            } else {
+                not_completed_todos = not_completed_todos + &key + ", ";
+            }
         }
+        println!("Not completed Todos!: {}", not_completed_todos);
+        println!("Completed Todos!: {}", completed_todos);
     }
 
     fn save(self) -> Result<(), std::io::Error> {
