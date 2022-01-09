@@ -1,34 +1,66 @@
 use ::std::collections::HashMap;
-use std::io::Read;
+use std::io::{stdin, Read};
 use std::str::FromStr;
+
+const QUESTION_WHAT_ACTION: &str =
+    "What action to you want to perform? (add, complete, list, remove, end)";
 
 fn main() {
     println!("Hello, User!");
-    let action = std::env::args().nth(1).expect("Please specify an action.");
 
-    let mut todo = Todo::new().expect("Initialisation of db failed");
+    let mut action = String::new();
 
-    if action == "add" {
-        let item = std::env::args().nth(2).expect("Please specify an item.");
+    println!("{}", QUESTION_WHAT_ACTION);
 
-        todo.insert(item);
-        match todo.save() {
-            Ok(_) => println!("todo saved"),
-            Err(why) => println!("An error ocurred: {}", why),
-        }
-    } else if action == "complete" {
-        let item = std::env::args().nth(2).expect("Please specify an item.");
+    stdin()
+        .read_line(&mut action)
+        .expect("Did not enter a correct string");
+    action.pop();
 
-        match todo.complete(&item) {
-            None => println!("'{}' is not present in the list", item),
-            Some(_) => match todo.save() {
+    while action != "end" {
+        let mut todo = Todo::new().expect("Initialization of db failed");
+        let mut item: String = String::new();
+
+        if action == "add" {
+            stdin().read_line(&mut item).expect("Bad input");
+            item.pop();
+            todo.insert(item);
+            match todo.save() {
                 Ok(_) => println!("todo saved"),
-                Err(why) => println!("An error occurred: {}", why),
-            },
+                Err(why) => println!("An error ocurred: {}", why),
+            }
+        } else if action == "complete" {
+            stdin().read_line(&mut item).expect("Bad input");
+            item.pop();
+
+            match todo.complete(&item) {
+                None => println!("'{}' is not present in the list", item),
+                Some(_) => match todo.save() {
+                    Ok(_) => println!("todo saved"),
+                    Err(why) => println!("An error occurred: {}", why),
+                },
+            }
+        } else if action == "remove" {
+            stdin().read_line(&mut item).expect("Bad input");
+            item.pop();
+            match todo.remove(&item) {
+                None => println!("Todo does not exist: {}", item),
+                Some(v) => match todo.save() {
+                    Ok(_) => println!("todo removed: {} {}", item, v),
+                    Err(why) => println!("An error occurred: {}", why),
+                },
+            }
+        } else if action == "list" {
+            todo.print_all();
         }
-    } else if action == "list" {
-        todo.print_all();
+        action = String::from("");
+        println!("{}", QUESTION_WHAT_ACTION);
+        stdin()
+            .read_line(&mut action)
+            .expect("Did not enter correct String!");
+        action.pop();
     }
+    println!("Good bye!");
 }
 
 struct Todo {
@@ -71,6 +103,13 @@ impl Todo {
             content.push_str(&record)
         }
         std::fs::write("db.txt", content)
+    }
+
+    fn remove(&mut self, key: &String) -> Option<bool> {
+        match self.map.remove(key) {
+            Some(v) => Some(v),
+            None => None,
+        }
     }
 
     fn complete(&mut self, key: &String) -> Option<()> {
